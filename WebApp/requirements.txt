@@ -1,0 +1,43 @@
+# My Spy Web Application - Requirements
+# @author Michael KOJDL
+# @version 1.0.0
+# @revision 2025-10-30
+
+# Django Core
+Django==5.0.1
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+django-filter==23.5
+
+# Database
+psycopg2-binary==2.9.9
+dj-database-url==2.1.0
+
+# Cache & Sessions
+django-redis==5.4.0
+
+# Async & WebSocket
+channels==4.0.0
+channels-redis==4.1.0
+daphne==4.0.0
+
+# Celery
+celery==5.3.4
+django-celery-beat==2.5.0
+django-celery-results==2.5.1
+
+# Security
+django-environ==0.11.2
+python-decouple==3.8
+cryptography==41.0.7
+
+# API
+djangorestframework-simplejwt==5.3.1
+
+# Utils
+python-dateutil==2.8.2
+pytz==2023.3
+Pillow==10.1.0
+
+# Production Server
+gunicorn==21.2.0
