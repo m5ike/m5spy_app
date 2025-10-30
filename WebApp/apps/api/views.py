@@ -12,11 +12,19 @@ from .serializers import (
     RegisterDeviceSerializer,
     SmsMessageSerializer,
     CallLogSerializer,
-    LocationSerializer
+    LocationSerializer,
+    InstalledAppSerializer,
+    BrowserHistorySerializer,
+    MediaFileSerializer,
+    ScreenshotSerializer
 )
 from apps.monitoring_sms.models import SmsMessage
 from apps.monitoring_calls.models import CallLog
 from apps.monitoring_location.models import Location
+from apps.monitoring_apps.models import InstalledApp
+from apps.monitoring_browser.models import BrowserHistory
+from apps.monitoring_media.models import MediaFile
+from apps.monitoring_screenshots.models import Screenshot
 
 
 @api_view(['POST'])
@@ -149,3 +157,115 @@ def device_status(request):
         'model': device.model,
         'os_version': device.os_version
     })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_apps(request):
+    """
+    Upload installed apps
+    POST /api/v1/apps
+    """
+    many = isinstance(request.data, list)
+    serializer = InstalledAppSerializer(
+        data=request.data,
+        many=many,
+        context={'request': request}
+    )
+
+    if serializer.is_valid():
+        serializer.save()
+        count = len(serializer.data) if many else 1
+        return Response({
+            'result': 'ok',
+            'created': count
+        }, status=status.HTTP_201_CREATED)
+
+    return Response({
+        'result': 'error',
+        'message': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_browser_history(request):
+    """
+    Upload browser history
+    POST /api/v1/browser-history
+    """
+    many = isinstance(request.data, list)
+    serializer = BrowserHistorySerializer(
+        data=request.data,
+        many=many,
+        context={'request': request}
+    )
+
+    if serializer.is_valid():
+        serializer.save()
+        count = len(serializer.data) if many else 1
+        return Response({
+            'result': 'ok',
+            'created': count
+        }, status=status.HTTP_201_CREATED)
+
+    return Response({
+        'result': 'error',
+        'message': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_media(request):
+    """
+    Upload media files
+    POST /api/v1/media
+    """
+    many = isinstance(request.data, list)
+    serializer = MediaFileSerializer(
+        data=request.data,
+        many=many,
+        context={'request': request}
+    )
+
+    if serializer.is_valid():
+        serializer.save()
+        count = len(serializer.data) if many else 1
+        return Response({
+            'result': 'ok',
+            'created': count
+        }, status=status.HTTP_201_CREATED)
+
+    return Response({
+        'result': 'error',
+        'message': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_screenshots(request):
+    """
+    Upload screenshots
+    POST /api/v1/screenshots
+    """
+    many = isinstance(request.data, list)
+    serializer = ScreenshotSerializer(
+        data=request.data,
+        many=many,
+        context={'request': request}
+    )
+
+    if serializer.is_valid():
+        serializer.save()
+        count = len(serializer.data) if many else 1
+        return Response({
+            'result': 'ok',
+            'created': count
+        }, status=status.HTTP_201_CREATED)
+
+    return Response({
+        'result': 'error',
+        'message': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)

