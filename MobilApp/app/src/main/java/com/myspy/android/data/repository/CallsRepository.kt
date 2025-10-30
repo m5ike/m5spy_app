@@ -18,6 +18,10 @@ class CallsRepository(
 
     suspend fun saveCall(call: CallEntity): Long = callsDao.insert(call)
 
+    suspend fun saveMultiple(calls: List<CallEntity>) {
+        callsDao.insertAll(calls)
+    }
+
     suspend fun syncToServer(): Result<Int> {
         return try {
             val unsynced = callsDao.getUnsyncedCalls()
@@ -27,8 +31,9 @@ class CallsRepository(
                 CallData(
                     callType = entity.type,
                     number = entity.number,
-                    duration = entity.duration,
-                    timestamp = dateFormat.format(Date(entity.timestamp))
+                    duration = entity.duration.toInt(),
+                    timestamp = dateFormat.format(Date(entity.timestamp)),
+                    contactName = entity.contactName
                 )
             }
 

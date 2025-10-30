@@ -3,15 +3,16 @@ package com.myspy.android.data.local.db.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "call_logs")
-data class CallEntity(
+@Entity(tableName = "screenshots")
+data class ScreenshotEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val type: String, // INCOMING, OUTGOING, MISSED, REJECTED, BLOCKED
-    val number: String,
-    val duration: Long,
+    val filePath: String,
+    val fileName: String,
+    val fileSize: Long,
+    val width: Int,
+    val height: Int,
     val timestamp: Long,
-    val contactName: String? = null,
     val synced: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

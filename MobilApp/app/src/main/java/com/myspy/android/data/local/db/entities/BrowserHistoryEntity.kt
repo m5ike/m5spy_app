@@ -3,15 +3,14 @@ package com.myspy.android.data.local.db.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "call_logs")
-data class CallEntity(
+@Entity(tableName = "browser_history")
+data class BrowserHistoryEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val type: String, // INCOMING, OUTGOING, MISSED, REJECTED, BLOCKED
-    val number: String,
-    val duration: Long,
+    val url: String,
+    val title: String?,
+    val visitCount: Int = 1,
     val timestamp: Long,
-    val contactName: String? = null,
     val synced: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

