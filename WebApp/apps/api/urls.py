@@ -26,4 +26,8 @@ urlpatterns = [
 
     # Device Status
     path('status/', views.device_status, name='device_status'),
+
+    # Device Settings (Remote Control)
+    path('settings/', views.get_device_settings, name='get_device_settings'),
+    path('devices/<str:device_uuid>/settings/', views.update_device_settings, name='update_device_settings'),
 ]
