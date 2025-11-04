@@ -4,7 +4,7 @@
 # @version 2.0.0
 
 # ===== Stage 1: Builder =====
-FROM python:3.11-slim-bookworm as builder
+FROM python:3.11-slim-bookworm AS builder
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -16,6 +16,7 @@ ENV PYTHONUNBUFFERED=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
+    pkg-config \
     libpq-dev \
     libmariadb-dev \
     libmariadb-dev-compat \

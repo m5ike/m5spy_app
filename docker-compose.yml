@@ -1,5 +1,3 @@
-version: '3.8'
-
 # My Spy - Docker Compose Configuration
 # Complete stack with separate containers
 # @author Michael KOJDL
