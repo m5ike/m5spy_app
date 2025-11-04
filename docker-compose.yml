@@ -1,0 +1,239 @@
+version: '3.8'
+
+# My Spy - Docker Compose Configuration
+# Complete stack with separate containers
+# @author Michael KOJDL
+# @version 2.0.0
+
+services:
+  # ===== MySQL Database =====
+  mysql:
+    image: mysql:8.0
+    container_name: myspy_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-myspy_db}
+      MYSQL_USER: ${DB_USER:-myspy_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-myspy_password_change_me}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password_change_me}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+      - ./docker/mysql/conf:/etc/mysql/conf.d:ro
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    networks:
+      - myspy_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_password_change_me}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Redis Cache =====
+  redis:
+    image: redis:7-alpine
+    container_name: myspy_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password_change_me}
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - myspy_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== RabbitMQ Message Broker =====
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: myspy_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-myspy}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq_password_change_me}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-myspy_vhost}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    networks:
+      - myspy_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ===== Django Web Application =====
+  webapp:
+    build:
+      context: ./WebApp
+      dockerfile: Dockerfile
+    container_name: myspy_webapp
+    restart: unless-stopped
+    environment:
+      # Django Settings
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-change-me-in-production}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
+
+      # Database
+      DB_ENGINE: ${DB_ENGINE:-django.db.backends.mysql}
+      DB_NAME: ${DB_NAME:-myspy_db}
+      DB_USER: ${DB_USER:-myspy_user}
+      DB_PASSWORD: ${DB_PASSWORD:-myspy_password_change_me}
+      DB_HOST: mysql
+      DB_PORT: 3306
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password_change_me}
+      REDIS_DB: 0
+
+      # RabbitMQ / Celery
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-myspy}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rabbitmq_password_change_me}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-myspy_vhost}
+      CELERY_BROKER_URL: amqp://${RABBITMQ_USER:-myspy}:${RABBITMQ_PASSWORD:-rabbitmq_password_change_me}@rabbitmq:5672/${RABBITMQ_VHOST:-myspy_vhost}
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis_password_change_me}@redis:6379/1
+    volumes:
+      - ./WebApp:/app
+      - static_data:/app/staticfiles
+      - media_data:/app/mediafiles
+      - logs_data:/app/logs
+    ports:
+      - "${WEBAPP_PORT:-8000}:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - myspy_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/status/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120 --access-logfile - --error-logfile -
+
+  # ===== Celery Worker =====
+  celery_worker:
+    build:
+      context: ./WebApp
+      dockerfile: Dockerfile
+    container_name: myspy_celery_worker
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-change-me-in-production}
+      DB_ENGINE: ${DB_ENGINE:-django.db.backends.mysql}
+      DB_NAME: ${DB_NAME:-myspy_db}
+      DB_USER: ${DB_USER:-myspy_user}
+      DB_PASSWORD: ${DB_PASSWORD:-myspy_password_change_me}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password_change_me}
+      CELERY_BROKER_URL: amqp://${RABBITMQ_USER:-myspy}:${RABBITMQ_PASSWORD:-rabbitmq_password_change_me}@rabbitmq:5672/${RABBITMQ_VHOST:-myspy_vhost}
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis_password_change_me}@redis:6379/1
+    volumes:
+      - ./WebApp:/app
+      - logs_data:/app/logs
+    depends_on:
+      - mysql
+      - redis
+      - rabbitmq
+      - webapp
+    networks:
+      - myspy_network
+    command: celery -A config worker --loglevel=info --concurrency=2
+
+  # ===== Celery Beat (Scheduler) =====
+  celery_beat:
+    build:
+      context: ./WebApp
+      dockerfile: Dockerfile
+    container_name: myspy_celery_beat
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-change-me-in-production}
+      DB_ENGINE: ${DB_ENGINE:-django.db.backends.mysql}
+      DB_NAME: ${DB_NAME:-myspy_db}
+      DB_USER: ${DB_USER:-myspy_user}
+      DB_PASSWORD: ${DB_PASSWORD:-myspy_password_change_me}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      CELERY_BROKER_URL: amqp://${RABBITMQ_USER:-myspy}:${RABBITMQ_PASSWORD:-rabbitmq_password_change_me}@rabbitmq:5672/${RABBITMQ_VHOST:-myspy_vhost}
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis_password_change_me}@redis:6379/1
+    volumes:
+      - ./WebApp:/app
+      - logs_data:/app/logs
+    depends_on:
+      - mysql
+      - redis
+      - rabbitmq
+      - webapp
+    networks:
+      - myspy_network
+    command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  # ===== Nginx Reverse Proxy (Optional) =====
+  nginx:
+    image: nginx:alpine
+    container_name: myspy_nginx
+    restart: unless-stopped
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - static_data:/app/staticfiles:ro
+      - media_data:/app/mediafiles:ro
+      - nginx_logs:/var/log/nginx
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    depends_on:
+      - webapp
+    networks:
+      - myspy_network
+
+# ===== Volumes =====
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  static_data:
+    driver: local
+  media_data:
+    driver: local
+  logs_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+# ===== Networks =====
+networks:
+  myspy_network:
+    driver: bridge
