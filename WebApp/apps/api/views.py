@@ -27,6 +27,20 @@ from apps.monitoring_media.models import MediaFile
 from apps.monitoring_screenshots.models import Screenshot
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """
+    Health check endpoint for Docker/K8s
+    GET /api/v1/health
+    """
+    return Response({
+        'status': 'healthy',
+        'timestamp': timezone.now().isoformat(),
+        'version': '2.0.0'
+    }, status=status.HTTP_200_OK)
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_device(request):

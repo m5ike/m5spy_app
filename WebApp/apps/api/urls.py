@@ -9,6 +9,9 @@ from . import views
 app_name = 'api'
 
 urlpatterns = [
+    # Health check (no authentication required)
+    path('health/', views.health_check, name='health_check'),
+
     # Device Registration
     path('register/', views.register_device, name='register'),
 
