@@ -85,7 +85,13 @@ class App : Application() {
      */
     private fun initializeServices() {
         // Spustit hlavní službu pokud je aplikace již registrovaná
-        // TODO: Implementovat check registrace a start MainService
+        val prefsManager = com.myspy.android.data.local.prefs.PrefsManager(this)
+        if (prefsManager.isRegistered()) {
+            com.myspy.android.services.MainService.start(this)
+            Timber.d("MainService started - device is registered")
+        } else {
+            Timber.d("MainService not started - device is not registered")
+        }
         Timber.d("Services initialized")
     }
 }
